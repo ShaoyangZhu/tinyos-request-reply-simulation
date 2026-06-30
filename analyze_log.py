@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import argparse
+import datetime
 import json
 import os
 import re
@@ -39,6 +40,11 @@ def parse_args():
         default="log.txt",
         help="Log file path. Defaults to log.txt.",
     )
+    parser.add_argument(
+        "--json-out",
+        default=None,
+        help="Optional JSON output path for the visualization UI.",
+    )
     return parser.parse_args()
 
 
@@ -61,6 +67,12 @@ def percent(numerator, denominator):
     if denominator:
         return 100.0 * float(numerator) / float(denominator)
     return 0.0
+
+
+def ensure_parent_dir(path):
+    parent = os.path.dirname(os.path.abspath(path))
+    if parent and not os.path.isdir(parent):
+        os.makedirs(parent)
 
 
 def record_sink_receive(
@@ -236,6 +248,66 @@ def print_report(scenario_name, log_path, sink, responders, result):
         print("None")
 
 
+def build_json_report(scenario_name, log_path, sink, responders, result):
+    request_count = result["request_count"]
+    per_node = []
+
+    for responder in responders:
+        received = len(
+            [item for item in result["received_replies"] if item[0] == responder]
+        )
+        expected = request_count
+        loss = expected - received
+        per_node.append(
+            {
+                "node": responder,
+                "expected": expected,
+                "received": received,
+                "loss": loss,
+                "reception_rate": percent(received, expected),
+                "average_delay": average(result["delays_by_responder"][responder]),
+                "average_hop_count": average(
+                    result["hop_counts_by_responder"][responder]
+                ),
+            }
+        )
+
+    missing_replies = [
+        {"node": responder, "seq": seq}
+        for responder, seq in result["missing_replies"]
+    ]
+
+    return {
+        "schema_version": 1,
+        "generated_at": datetime.datetime.utcnow()
+        .replace(microsecond=0)
+        .isoformat()
+        + "Z",
+        "scenario": scenario_name,
+        "log_path": log_path,
+        "sink": sink,
+        "responders": responders,
+        "overall": {
+            "request_count": request_count,
+            "expected_reply_count": result["expected_reply_count"],
+            "actual_reply_count": result["actual_reply_count"],
+            "packet_reception_rate": result["packet_reception_rate"],
+            "end_to_end_success_rate": result["end_to_end_success_rate"],
+            "average_delay": result["average_delay"],
+            "average_hop_count": result["average_hop_count"],
+        },
+        "per_node": per_node,
+        "missing_replies": missing_replies,
+    }
+
+
+def write_json_report(path, report):
+    ensure_parent_dir(path)
+    with open(path, "w") as f:
+        json.dump(report, f, indent=2, sort_keys=True)
+        f.write("\n")
+
+
 def main():
     args = parse_args()
     scenario_name = args.scenario_option or args.scenario or "baseline"
@@ -245,6 +317,12 @@ def main():
 
     result = analyze_log(args.log, sink, responders)
     print_report(scenario_name, args.log, sink, responders, result)
+    if args.json_out:
+        write_json_report(
+            args.json_out,
+            build_json_report(scenario_name, args.log, sink, responders, result),
+        )
+        print("JSON report saved to %s" % args.json_out)
 
 
 if __name__ == "__main__":

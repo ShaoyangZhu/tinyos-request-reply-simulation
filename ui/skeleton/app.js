@@ -249,6 +249,11 @@ const elements = {
 };
 
 let activeScenario = "multihop_chain";
+let currentRunState = { text: "Ready", tone: "green" };
+let currentJob = null;
+let pollTimer = null;
+const analysisResults = {};
+const apiEnabled = window.location.protocol !== "file:";
 
 function byId(scenario, id) {
   return scenario.nodes.find((node) => node.id === id);
@@ -263,8 +268,14 @@ function escapeHtml(value) {
 }
 
 function setState(text, tone = "green") {
+  currentRunState = { text, tone };
   elements.runState.textContent = text;
   elements.runState.className = `badge bg-${tone}-lt text-${tone}`;
+}
+
+function renderRunState() {
+  elements.runState.textContent = currentRunState.text;
+  elements.runState.className = `badge bg-${currentRunState.tone}-lt text-${currentRunState.tone}`;
 }
 
 function expectedHops(scenario, nodeId) {
@@ -288,6 +299,39 @@ function scenarioHealth(scenario) {
   return "direct";
 }
 
+function nativeRunCommand(scenarioKey) {
+  const logPath = `logs/${scenarioKey}.txt`;
+  const resultPath = `ui/results/${scenarioKey}.json`;
+  return [
+    "make clean",
+    "make micaz sim",
+    `python sim.py ${scenarioKey} --log ${logPath}`,
+    `python analyze_log.py ${scenarioKey} --log ${logPath} --json-out ${resultPath}`
+  ].join(" && ");
+}
+
+function resultFor(scenarioKey) {
+  const result = analysisResults[scenarioKey];
+  if (result && result.scenario === scenarioKey) {
+    return result;
+  }
+  return null;
+}
+
+function formatPercent(value) {
+  if (typeof value !== "number") {
+    return "pending";
+  }
+  return `${value.toFixed(2)}%`;
+}
+
+function formatMetric(value, suffix = "") {
+  if (typeof value !== "number") {
+    return "pending";
+  }
+  return `${value.toFixed(2)}${suffix}`;
+}
+
 function renderScenarioList() {
   elements.scenarioList.innerHTML = "";
 
@@ -302,6 +346,7 @@ function renderScenarioList() {
     button.addEventListener("click", () => {
       activeScenario = key;
       render();
+      loadResult(activeScenario, true);
     });
     elements.scenarioList.appendChild(button);
   });
@@ -402,7 +447,37 @@ function renderTopology(scenario) {
   });
 }
 
-function metricConfig(scenario) {
+function metricConfig(scenario, result) {
+  if (result && result.overall) {
+    const overall = result.overall;
+    return [
+      [
+        "Packet reception",
+        formatPercent(overall.packet_reception_rate),
+        overall.packet_reception_rate || 0,
+        "green"
+      ],
+      [
+        "End-to-end",
+        formatPercent(overall.end_to_end_success_rate),
+        overall.end_to_end_success_rate || 0,
+        "primary"
+      ],
+      [
+        "Avg delay",
+        formatMetric(overall.average_delay, " ms"),
+        Math.min(overall.average_delay || 0, 100),
+        "orange"
+      ],
+      [
+        "Avg hops",
+        formatMetric(overall.average_hop_count),
+        Math.min((overall.average_hop_count || 0) * 35, 100),
+        "azure"
+      ]
+    ];
+  }
+
   const expectedReplies = scenario.responders.length;
   const routedResponders = scenario.responders.filter((id) => expectedHops(scenario, id) > 1).length;
   return [
@@ -421,10 +496,10 @@ function expectedAverageHops(scenario) {
   return total / scenario.responders.length;
 }
 
-function renderMetrics(scenario) {
+function renderMetrics(scenario, result) {
   elements.metricStack.innerHTML = "";
 
-  metricConfig(scenario).forEach(([label, value, meter, tone]) => {
+  metricConfig(scenario, result).forEach(([label, value, meter, tone]) => {
     const metric = document.createElement("div");
     metric.className = "metric-row";
     metric.innerHTML = `
@@ -455,23 +530,37 @@ function roleBadgeClass(role) {
   return "bg-green-lt text-green";
 }
 
-function renderStats(scenario) {
+function renderStats(scenario, result) {
   elements.statsBody.innerHTML = "";
-  elements.tableBadge.textContent = `${scenario.responders.length} responders`;
+  elements.tableBadge.textContent = result
+    ? `from ${result.log_path || "analysis JSON"}`
+    : `${scenario.responders.length} responders`;
+
+  const statsByNode = {};
+  if (result && Array.isArray(result.per_node)) {
+    result.per_node.forEach((item) => {
+      statsByNode[item.node] = item;
+    });
+  }
 
   scenario.responders.forEach((nodeId) => {
     const role = roleForNode(scenario, nodeId);
     const hops = expectedHops(scenario, nodeId);
+    const stats = statsByNode[nodeId];
     const row = document.createElement("tr");
     row.innerHTML = `
       <td class="fw-bold">node ${nodeId}</td>
       <td><span class="badge role-badge ${roleBadgeClass(role)}">${role}</span></td>
-      <td>1 / seq</td>
-      <td><span class="text-secondary">pending</span></td>
-      <td><span class="text-secondary">pending</span></td>
-      <td><span class="badge bg-secondary-lt">after run</span></td>
-      <td><span class="text-secondary">after run</span></td>
-      <td>${hops.toFixed(2)}</td>
+      <td>${stats ? stats.expected : "1 / seq"}</td>
+      <td>${stats ? stats.received : '<span class="text-secondary">pending</span>'}</td>
+      <td>${stats ? stats.loss : '<span class="text-secondary">pending</span>'}</td>
+      <td>${
+        stats
+          ? `<span class="badge bg-green-lt text-green">${formatPercent(stats.reception_rate)}</span>`
+          : '<span class="badge bg-secondary-lt">after run</span>'
+      }</td>
+      <td>${stats ? formatMetric(stats.average_delay, " ms") : '<span class="text-secondary">after run</span>'}</td>
+      <td>${stats ? formatMetric(stats.average_hop_count) : hops.toFixed(2)}</td>
     `;
     elements.statsBody.appendChild(row);
   });
@@ -493,7 +582,20 @@ function renderFlow(scenario) {
 
 function renderLogs(scenario) {
   elements.logStream.innerHTML = "";
-  scenario.log.forEach(([text, tone]) => {
+
+  const liveLines =
+    currentJob &&
+    currentJob.scenario === activeScenario &&
+    Array.isArray(currentJob.output_tail) &&
+    currentJob.output_tail.length
+      ? currentJob.output_tail.slice(-12).map((line) => [
+          line,
+          currentJob.status === "failed" ? "drop" : currentJob.status === "complete" ? "success" : "forward"
+        ])
+      : null;
+
+  const lines = liveLines || scenario.log;
+  lines.forEach(([text, tone]) => {
     const line = document.createElement("div");
     line.className = `log-line ${tone}`.trim();
     line.textContent = text;
@@ -501,7 +603,7 @@ function renderLogs(scenario) {
   });
 }
 
-function renderReport(scenario) {
+function renderReport(scenario, result) {
   const routeText = scenario.routes.length
     ? scenario.routes.map((route) => `${route.node}->${route.nextHop}`).join(", ")
     : `responders reply directly to sink ${scenario.sink}`;
@@ -509,6 +611,40 @@ function renderReport(scenario) {
   const nonDirect = scenario.responders
     .filter((id) => expectedHops(scenario, id) > 1)
     .map((id) => `node ${id}`);
+
+  if (result && result.overall) {
+    const overall = result.overall;
+    const missingCount = Array.isArray(result.missing_replies)
+      ? result.missing_replies.length
+      : 0;
+    elements.reportSnippet.textContent = [
+      `### ${scenario.label}`,
+      "",
+      `Generated: ${result.generated_at || "unknown"}`,
+      `Log: ${result.log_path || "unknown"}`,
+      `Sink: node ${result.sink}`,
+      `Responders: ${result.responders.map((id) => `node ${id}`).join(", ")}`,
+      "",
+      "Analysis result:",
+      `- requests: ${overall.request_count}`,
+      `- expected replies: ${overall.expected_reply_count}`,
+      `- received replies: ${overall.actual_reply_count}`,
+      `- packet reception rate: ${formatPercent(overall.packet_reception_rate)}`,
+      `- end-to-end success rate: ${formatPercent(overall.end_to_end_success_rate)}`,
+      `- average delay: ${formatMetric(overall.average_delay, " ms")}`,
+      `- average hop_count: ${formatMetric(overall.average_hop_count)}`,
+      `- missing replies: ${missingCount}`,
+      "",
+      "Missing origin/seq pairs:",
+      missingCount
+        ? result.missing_replies
+            .slice(0, 20)
+            .map((item) => `- node ${item.node} seq ${item.seq}`)
+            .join("\n")
+        : "- none"
+    ].join("\n");
+    return;
+  }
 
   elements.reportSnippet.textContent = [
     `### ${scenario.label}`,
@@ -537,12 +673,13 @@ function renderReport(scenario) {
 
 function render() {
   const scenario = scenarios[activeScenario];
+  const result = resultFor(activeScenario);
 
   renderScenarioList();
   elements.title.textContent = `${scenario.label}`;
   elements.category.textContent = `${scenario.category} · ${scenarioHealth(scenario)}`;
-  elements.command.textContent = `sh container/run-in-container.sh ${activeScenario}`;
-  setState("Ready", "green");
+  elements.command.textContent = nativeRunCommand(activeScenario);
+  renderRunState();
   elements.sink.textContent = scenario.sink;
   elements.responders.textContent = scenario.responders.join(", ");
   elements.events.textContent = scenario.events.toLocaleString();
@@ -551,11 +688,11 @@ function render() {
 
   renderRoutes(scenario);
   renderTopology(scenario);
-  renderMetrics(scenario);
-  renderStats(scenario);
+  renderMetrics(scenario, result);
+  renderStats(scenario, result);
   renderFlow(scenario);
   renderLogs(scenario);
-  renderReport(scenario);
+  renderReport(scenario, result);
 }
 
 async function copyText(text, successLabel) {
@@ -567,12 +704,112 @@ async function copyText(text, successLabel) {
   }
 }
 
-elements.runButton.addEventListener("click", () => {
-  setState("Preview queued. No simulation was started.", "yellow");
-});
+async function apiJson(path, options = {}) {
+  const response = await fetch(path, {
+    headers: {
+      "Content-Type": "application/json"
+    },
+    ...options
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload.error || `HTTP ${response.status}`);
+  }
+  return payload;
+}
+
+async function loadResult(scenarioKey, silent = false) {
+  if (!apiEnabled) {
+    return;
+  }
+
+  try {
+    const result = await apiJson(`/api/results?scenario=${encodeURIComponent(scenarioKey)}`);
+    analysisResults[scenarioKey] = result;
+    if (activeScenario === scenarioKey) {
+      render();
+    }
+  } catch (error) {
+    if (!silent) {
+      setState(`No result yet for ${scenarioKey}`, "yellow");
+    }
+  }
+}
+
+function stopPolling() {
+  if (pollTimer) {
+    window.clearInterval(pollTimer);
+    pollTimer = null;
+  }
+}
+
+async function pollStatus() {
+  if (!apiEnabled) {
+    return;
+  }
+
+  try {
+    currentJob = await apiJson("/api/status");
+  } catch (error) {
+    stopPolling();
+    setState("Run API unavailable", "yellow");
+    return;
+  }
+
+  if (currentJob.status === "running") {
+    setState(currentJob.message || "Simulation running", "yellow");
+    render();
+    return;
+  }
+
+  if (currentJob.status === "complete") {
+    stopPolling();
+    setState("Simulation complete. Results loaded.", "green");
+    await loadResult(currentJob.scenario || activeScenario, false);
+    render();
+    return;
+  }
+
+  if (currentJob.status === "failed") {
+    stopPolling();
+    setState(currentJob.message || "Simulation failed", "red");
+    render();
+  }
+}
+
+function startPolling() {
+  stopPolling();
+  pollStatus();
+  pollTimer = window.setInterval(pollStatus, 1500);
+}
+
+async function runActiveScenario() {
+  if (!apiEnabled) {
+    setState("Start with ./ui/run-ui.sh, then open http://localhost:8080/skeleton/", "yellow");
+    return;
+  }
+
+  try {
+    await apiJson("/api/run", {
+      method: "POST",
+      body: JSON.stringify({
+        scenario: activeScenario,
+        build: true
+      })
+    });
+    setState(`Running ${activeScenario}`, "yellow");
+    startPolling();
+  } catch (error) {
+    setState(error.message, "red");
+  }
+}
+
+elements.runButton.addEventListener("click", runActiveScenario);
 
 elements.inspectButton.addEventListener("click", () => {
   const scenario = scenarios[activeScenario];
+  loadResult(activeScenario, false);
   setState(`${scenario.configPath} selected`, "azure");
 });
 
@@ -585,3 +822,8 @@ elements.copyEvidenceButton.addEventListener("click", () => {
 });
 
 render();
+loadResult(activeScenario, true);
+if (apiEnabled) {
+  pollStatus();
+  window.setInterval(() => loadResult(activeScenario, true), 5000);
+}
