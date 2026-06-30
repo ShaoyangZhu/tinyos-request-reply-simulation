@@ -219,6 +219,13 @@ Python 3 but run the simulation scripts with Python 2:
 TOSSIM_PYTHON=python2 ./ui/run-ui.sh
 ```
 
+For older TinyOS VM images where `python3` is Python 3.4, use the same command
+shape. The UI server avoids Python 3.5-only APIs:
+
+```bash
+PYTHON_BIN=python3 TOSSIM_PYTHON=python ./ui/run-ui.sh
+```
+
 The UI button calls `POST /api/run`. The local server then runs:
 
 ```text

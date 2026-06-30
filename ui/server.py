@@ -16,11 +16,16 @@ import subprocess
 import threading
 import time
 import uuid
-from http import HTTPStatus
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from socketserver import ThreadingMixIn
 from urllib.parse import parse_qs, unquote, urlparse
 
+
+HTTP_OK = 200
+HTTP_ACCEPTED = 202
+HTTP_BAD_REQUEST = 400
+HTTP_NOT_FOUND = 404
+HTTP_CONFLICT = 409
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(BASE_DIR)
@@ -271,11 +276,11 @@ class TOSSIMUIHandler(SimpleHTTPRequestHandler):
     def do_GET(self):
         parsed = urlparse(self.path)
         if parsed.path == "/api/scenarios":
-            self.write_json(HTTPStatus.OK, {"scenarios": list_scenarios()})
+            self.write_json(HTTP_OK, {"scenarios": list_scenarios()})
             return
 
         if parsed.path == "/api/status":
-            self.write_json(HTTPStatus.OK, snapshot_job())
+            self.write_json(HTTP_OK, snapshot_job())
             return
 
         if parsed.path == "/api/results":
@@ -287,18 +292,18 @@ class TOSSIMUIHandler(SimpleHTTPRequestHandler):
                 try:
                     validate_scenario(scenario)
                 except ValueError as error:
-                    self.write_json(HTTPStatus.BAD_REQUEST, {"error": str(error)})
+                    self.write_json(HTTP_BAD_REQUEST, {"error": str(error)})
                     return
                 result_path = os.path.join(RESULT_ROOT, "%s.json" % scenario)
 
             if not os.path.isfile(result_path):
                 self.write_json(
-                    HTTPStatus.NOT_FOUND,
+                    HTTP_NOT_FOUND,
                     {"error": "Result not found.", "path": relpath(result_path)},
                 )
                 return
 
-            self.write_json(HTTPStatus.OK, load_json(result_path))
+            self.write_json(HTTP_OK, load_json(result_path))
             return
 
         return SimpleHTTPRequestHandler.do_GET(self)
@@ -306,7 +311,7 @@ class TOSSIMUIHandler(SimpleHTTPRequestHandler):
     def do_POST(self):
         parsed = urlparse(self.path)
         if parsed.path != "/api/run":
-            self.write_json(HTTPStatus.NOT_FOUND, {"error": "Unknown API endpoint."})
+            self.write_json(HTTP_NOT_FOUND, {"error": "Unknown API endpoint."})
             return
 
         try:
@@ -314,13 +319,13 @@ class TOSSIMUIHandler(SimpleHTTPRequestHandler):
             scenario = validate_scenario(payload.get("scenario", "baseline"))
             build_first = bool(payload.get("build", True))
         except ValueError as error:
-            self.write_json(HTTPStatus.BAD_REQUEST, {"error": str(error)})
+            self.write_json(HTTP_BAD_REQUEST, {"error": str(error)})
             return
 
         current = snapshot_job()
         if current.get("status") == "running":
             self.write_json(
-                HTTPStatus.CONFLICT,
+                HTTP_CONFLICT,
                 {
                     "error": "A simulation is already running.",
                     "job": current,
@@ -337,7 +342,7 @@ class TOSSIMUIHandler(SimpleHTTPRequestHandler):
         thread.start()
 
         self.write_json(
-            HTTPStatus.ACCEPTED,
+            HTTP_ACCEPTED,
             {
                 "id": job_id,
                 "scenario": scenario,
