@@ -68,6 +68,119 @@ def load_json(path):
         return json.load(f)
 
 
+def title_from_name(name):
+    return " ".join([part.capitalize() for part in name.split("_")])
+
+
+def noise_summary(config):
+    noise = config.get("noise", {})
+    if not isinstance(noise, dict):
+        return "configured"
+
+    model = noise.get("model", "configured")
+    value = noise.get("value")
+    count = noise.get("count")
+    if value is None:
+        return str(model)
+    if count is None:
+        return "%s dBm" % value
+    return "%s dBm x %s" % (value, count)
+
+
+def parse_topology(topo_path):
+    edges = []
+    if not os.path.isfile(topo_path):
+        return edges
+
+    with open(topo_path, "r") as f:
+        for line_no, raw_line in enumerate(f, 1):
+            line = raw_line.split("#", 1)[0].strip()
+            if not line:
+                continue
+
+            fields = line.split()
+            if len(fields) != 3:
+                raise ValueError("%s:%d must have: src dst gain" % (topo_path, line_no))
+
+            src = int(fields[0])
+            dst = int(fields[1])
+            gain = float(fields[2])
+            edges.append({"src": src, "dst": dst, "gain": gain})
+
+    return edges
+
+
+def display_edges(edges, static_routes):
+    route_pairs = set()
+    for node_id, next_hop in static_routes.items():
+        node = int(node_id)
+        hop = int(next_hop)
+        route_pairs.add(tuple(sorted([node, hop])))
+
+    pairs = {}
+    for edge in edges:
+        key = tuple(sorted([edge["src"], edge["dst"]]))
+        if key not in pairs:
+            pairs[key] = {
+                "src": edge["src"],
+                "dst": edge["dst"],
+                "gain": edge["gain"],
+                "directions": set(),
+            }
+        pairs[key]["directions"].add((edge["src"], edge["dst"]))
+        pairs[key]["gain"] = min(pairs[key]["gain"], edge["gain"])
+
+    result = []
+    for key in sorted(pairs):
+        item = pairs[key]
+        bidirectional = len(item["directions"]) > 1
+        label = "%d<->%d" % (key[0], key[1]) if bidirectional else "%d->%d" % (
+            item["src"],
+            item["dst"],
+        )
+        variant = "route" if key in route_pairs else ""
+        if item["gain"] <= -80:
+            variant = "weak"
+            label = "%s %.0f" % (label, item["gain"])
+
+        result.append(
+            {
+                "src": key[0],
+                "dst": key[1],
+                "label": label,
+                "gain": item["gain"],
+                "variant": variant,
+            }
+        )
+
+    return result
+
+
+def node_role(node_id, sink, static_routes):
+    if node_id == sink:
+        return "sink"
+    children = [node for node, hop in static_routes.items() if int(hop) == node_id]
+    if children:
+        return "relay"
+    return "edge"
+
+
+def scenario_category(config, edges):
+    static_routes = config.get("static_routes", {})
+    if static_routes:
+        return "multi-hop routing"
+
+    gains = [edge["gain"] for edge in edges]
+    if gains and min(gains) <= -80:
+        return "link quality"
+
+    nodes = config.get("nodes", [])
+    if len(nodes) > 3:
+        return "scale test"
+
+    return "scale control"
+
+
 def list_scenarios():
     scenarios = []
     if not os.path.isdir(SCENARIO_ROOT):
@@ -81,16 +194,32 @@ def list_scenarios():
             continue
 
         config = load_json(config_path)
+        static_routes = config.get("static_routes", {})
+        topo_edges = parse_topology(topo_path)
+        sink = int(config.get("sink", 1))
+        nodes = []
+        for node_id in config.get("nodes", []):
+            node = int(node_id)
+            nodes.append({"id": node, "role": node_role(node, sink, static_routes)})
+
         scenarios.append(
             {
                 "name": name,
+                "label": title_from_name(config.get("name", name)),
+                "description": config.get("description", ""),
+                "category": scenario_category(config, topo_edges),
                 "config_path": relpath(config_path),
                 "topo_path": relpath(topo_path),
-                "nodes": config.get("nodes", []),
-                "sink": config.get("sink", 1),
-                "responders": config.get("responders", []),
+                "nodes": nodes,
+                "sink": sink,
+                "responders": [int(node_id) for node_id in config.get("responders", [])],
                 "event_count": config.get("event_count"),
-                "static_routes": config.get("static_routes", {}),
+                "noise": noise_summary(config),
+                "routes": [
+                    {"node": int(node_id), "nextHop": int(next_hop)}
+                    for node_id, next_hop in sorted(static_routes.items())
+                ],
+                "edges": display_edges(topo_edges, static_routes),
             }
         )
 
@@ -320,7 +449,7 @@ class TOSSIMUIHandler(SimpleHTTPRequestHandler):
 
         try:
             payload = self.read_json_body()
-            scenario = validate_scenario(payload.get("scenario", "baseline"))
+            scenario = validate_scenario(payload.get("scenario"))
             build_first = bool(payload.get("build", True))
         except ValueError as error:
             self.write_json(HTTP_BAD_REQUEST, {"error": str(error)})

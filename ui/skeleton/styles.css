@@ -227,6 +227,29 @@ body {
   stroke: #238636;
 }
 
+.topology-empty rect {
+  fill: #ffffff;
+  stroke: rgba(32, 107, 196, 0.22);
+  stroke-width: 1.5;
+}
+
+.topology-empty text {
+  dominant-baseline: middle;
+  text-anchor: middle;
+}
+
+.topology-empty .empty-title {
+  fill: var(--lab-ink);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.topology-empty .empty-detail {
+  fill: var(--lab-muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
 .link-label {
   fill: #526273;
   font-size: 0.72rem;
@@ -275,6 +298,12 @@ body {
 .role-badge {
   min-width: 3.6rem;
   justify-content: center;
+}
+
+.empty-cell {
+  padding: 1.25rem !important;
+  color: var(--lab-muted);
+  text-align: center;
 }
 
 .flow-list {
@@ -336,11 +365,15 @@ body {
 .report-snippet {
   min-height: 18rem;
   margin: 0;
+  padding: 1rem;
   overflow: auto;
+  border: 1px solid rgba(98, 105, 118, 0.16);
+  border-radius: var(--tblr-border-radius);
+  background: #ffffff;
   color: var(--lab-ink);
   font-family: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
-  font-size: 0.78rem;
-  line-height: 1.55;
+  font-size: 0.875rem;
+  line-height: 1.6;
   white-space: pre-wrap;
 }
 

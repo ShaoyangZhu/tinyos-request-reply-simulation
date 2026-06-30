@@ -1,227 +1,3 @@
-const scenarios = {
-  baseline: {
-    label: "Baseline",
-    category: "scale control",
-    type: "single-hop",
-    sink: 1,
-    responders: [2, 3],
-    events: 30000,
-    noise: "-95 dBm x 100",
-    links: 6,
-    configPath: "scenarios/baseline/config.json",
-    topoPath: "scenarios/baseline/topo.txt",
-    routes: [],
-    nodes: [
-      { id: 1, role: "sink", x: 360, y: 105 },
-      { id: 2, role: "edge", x: 230, y: 255 },
-      { id: 3, role: "edge", x: 490, y: 255 }
-    ],
-    edges: [
-      [1, 2, "1<->2"],
-      [1, 3, "1<->3"],
-      [2, 3, "2<->3"]
-    ],
-    flow: [
-      ["SEND_REQ", "node 1 broadcasts a request sequence"],
-      ["SEND_REPLY", "nodes 2 and 3 reply after staggered timers"],
-      ["RECV_AT_SINK", "node 1 records origin, sequence, and delay"]
-    ],
-    log: [
-      ["SEND_REQ node=1 seq=1 origin=1 hop_count=0", ""],
-      ["SEND_REPLY node=2 to=1 origin=2 seq=1 hop_count=1", ""],
-      ["RECV_AT_SINK node=1 origin=2 from=2 seq=1 hop_count=1", "success"],
-      ["SEND_REPLY node=3 to=1 origin=3 seq=1 hop_count=1", ""]
-    ]
-  },
-  four_nodes: {
-    label: "Four Nodes",
-    category: "scale test",
-    type: "single-hop",
-    sink: 1,
-    responders: [2, 3, 4],
-    events: 40000,
-    noise: "-95 dBm x 100",
-    links: 12,
-    configPath: "scenarios/four_nodes/config.json",
-    topoPath: "scenarios/four_nodes/topo.txt",
-    routes: [],
-    nodes: [
-      { id: 1, role: "sink", x: 360, y: 78 },
-      { id: 2, role: "edge", x: 215, y: 210 },
-      { id: 3, role: "edge", x: 505, y: 210 },
-      { id: 4, role: "edge", x: 360, y: 300 }
-    ],
-    edges: [
-      [1, 2, "1<->2"],
-      [1, 3, "1<->3"],
-      [1, 4, "1<->4"],
-      [2, 4, "2<->4"],
-      [3, 4, "3<->4"]
-    ],
-    flow: [
-      ["SEND_REQ", "sink reaches three responders"],
-      ["REPLY FAN-IN", "three replies converge at node 1"],
-      ["ANALYZE", "per-node rows are generated from responders"]
-    ],
-    log: [
-      ["SEND_REQ node=1 seq=1 origin=1 hop_count=0", ""],
-      ["RECV_AT_SINK node=1 origin=2 from=2 seq=1 hop_count=1", "success"],
-      ["RECV_AT_SINK node=1 origin=3 from=3 seq=1 hop_count=1", "success"],
-      ["RECV_AT_SINK node=1 origin=4 from=4 seq=1 hop_count=1", "success"]
-    ]
-  },
-  five_nodes: {
-    label: "Five Nodes",
-    category: "scale test",
-    type: "single-hop",
-    sink: 1,
-    responders: [2, 3, 4, 5],
-    events: 50000,
-    noise: "-95 dBm x 100",
-    links: 20,
-    configPath: "scenarios/five_nodes/config.json",
-    topoPath: "scenarios/five_nodes/topo.txt",
-    routes: [],
-    nodes: [
-      { id: 1, role: "sink", x: 360, y: 70 },
-      { id: 2, role: "edge", x: 175, y: 190 },
-      { id: 3, role: "edge", x: 545, y: 190 },
-      { id: 4, role: "edge", x: 250, y: 310 },
-      { id: 5, role: "edge", x: 470, y: 310 }
-    ],
-    edges: [
-      [1, 2, "1<->2"],
-      [1, 3, "1<->3"],
-      [1, 4, "1<->4"],
-      [1, 5, "1<->5"],
-      [4, 5, "4<->5"]
-    ],
-    flow: [
-      ["SEND_REQ", "node 1 reaches four responders"],
-      ["EXPECTED", "analysis expects four replies per request sequence"],
-      ["COMPARE", "node count changes can support deployment discussion"]
-    ],
-    log: [
-      ["SEND_REQ node=1 seq=1 origin=1 hop_count=0", ""],
-      ["RECV_AT_SINK node=1 origin=2 from=2 seq=1 hop_count=1", "success"],
-      ["RECV_AT_SINK node=1 origin=3 from=3 seq=1 hop_count=1", "success"],
-      ["RECV_AT_SINK node=1 origin=4 from=4 seq=1 hop_count=1", "success"],
-      ["RECV_AT_SINK node=1 origin=5 from=5 seq=1 hop_count=1", "success"]
-    ]
-  },
-  weak_link: {
-    label: "Weak Link",
-    category: "link quality",
-    type: "loss model",
-    sink: 1,
-    responders: [2, 3],
-    events: 30000,
-    noise: "-95 dBm x 100",
-    links: 6,
-    configPath: "scenarios/weak_link/config.json",
-    topoPath: "scenarios/weak_link/topo.txt",
-    routes: [],
-    nodes: [
-      { id: 1, role: "sink", x: 360, y: 105 },
-      { id: 2, role: "edge", x: 230, y: 255 },
-      { id: 3, role: "edge", x: 490, y: 255 }
-    ],
-    edges: [
-      [1, 2, "1<->2"],
-      [1, 3, "weak -85", "weak"],
-      [2, 3, "2<->3"]
-    ],
-    flow: [
-      ["SEND_REQ", "node 1 reaches node 2 and weakly reaches node 3"],
-      ["LOSS PRESSURE", "weak gain should reduce node 3 delivery"],
-      ["COMPARE PRR", "analysis compares node 3 against node 2"]
-    ],
-    log: [
-      ["SEND_REQ node=1 seq=1 origin=1 hop_count=0", ""],
-      ["RECV_AT_SINK node=1 origin=2 from=2 seq=1 hop_count=1", "success"],
-      ["MISSING_REPLY origin=3 seq=1 reason=weak_link", "drop"]
-    ]
-  },
-  missing_reverse_link: {
-    label: "Missing Reverse",
-    category: "asymmetric link",
-    type: "failure mode",
-    sink: 1,
-    responders: [2, 3],
-    events: 30000,
-    noise: "-95 dBm x 100",
-    links: 5,
-    configPath: "scenarios/missing_reverse_link/config.json",
-    topoPath: "scenarios/missing_reverse_link/topo.txt",
-    routes: [],
-    nodes: [
-      { id: 1, role: "sink", x: 360, y: 105 },
-      { id: 2, role: "edge", x: 230, y: 255 },
-      { id: 3, role: "edge", x: 490, y: 255 }
-    ],
-    edges: [
-      [1, 2, "1->2"],
-      [1, 3, "1<->3"],
-      [2, 3, "2<->3"]
-    ],
-    flow: [
-      ["ONE-WAY", "node 1 can reach node 2"],
-      ["REVERSE FAIL", "node 2 cannot reply directly to node 1"],
-      ["MISSING PAIR", "analysis exposes node and sequence gaps"]
-    ],
-    log: [
-      ["SEND_REQ node=1 seq=1 origin=1 hop_count=0", ""],
-      ["SEND_REPLY node=2 to=1 origin=2 seq=1 hop_count=1", ""],
-      ["MISSING_REPLY origin=2 seq=1 reason=no_reverse_link", "drop"],
-      ["RECV_AT_SINK node=1 origin=3 from=3 seq=1 hop_count=1", "success"]
-    ]
-  },
-  multihop_chain: {
-    label: "Multi-hop Chain",
-    category: "multi-hop routing",
-    type: "network layer",
-    sink: 1,
-    responders: [2, 3, 4, 5],
-    events: 50000,
-    noise: "-95 dBm x 100",
-    links: 8,
-    configPath: "scenarios/multihop_chain/config.json",
-    topoPath: "scenarios/multihop_chain/topo.txt",
-    routes: [
-      { node: 2, nextHop: 1 },
-      { node: 3, nextHop: 1 },
-      { node: 4, nextHop: 2 },
-      { node: 5, nextHop: 3 }
-    ],
-    nodes: [
-      { id: 1, role: "sink", x: 360, y: 70 },
-      { id: 2, role: "relay", x: 240, y: 185 },
-      { id: 3, role: "relay", x: 480, y: 185 },
-      { id: 4, role: "edge", x: 165, y: 310 },
-      { id: 5, role: "edge", x: 555, y: 310 }
-    ],
-    edges: [
-      [4, 2, "4->2", "route"],
-      [2, 1, "2->1", "route"],
-      [5, 3, "5->3", "route"],
-      [3, 1, "3->1", "route"]
-    ],
-    flow: [
-      ["REQUEST", "sink sends the request toward relay layer"],
-      ["FORWARD", "node 2 reaches node 4, node 3 reaches node 5"],
-      ["STATIC ROUTE", "node 4 replies through 2 and node 5 through 3"],
-      ["RECV_AT_SINK", "sink records origin and hop_count"]
-    ],
-    log: [
-      ["SEND_REQ node=1 seq=1 origin=1 hop_count=0", ""],
-      ["FORWARD node=2 type=REQUEST origin=1 to=4 next_hop=4 seq=1 hop_count=1", "forward"],
-      ["SEND_REPLY node=4 to=2 origin=4 seq=1 hop_count=1", ""],
-      ["FORWARD node=2 type=REPLY origin=4 to=1 next_hop=1 seq=1 hop_count=2", "forward"],
-      ["RECV_AT_SINK node=1 origin=4 from=2 seq=1 hop_count=2", "success"]
-    ]
-  }
-};
-
 const elements = {
   scenarioList: document.getElementById("scenarioList"),
   title: document.getElementById("scenarioTitle"),
@@ -248,21 +24,14 @@ const elements = {
   copyEvidenceButton: document.getElementById("copyEvidenceButton")
 };
 
-let activeScenario = "multihop_chain";
-let currentRunState = { text: "Ready", tone: "green" };
+let scenarios = {};
+let scenarioOrder = [];
+let activeScenario = null;
+let currentRunState = { text: "Loading scenarios", tone: "yellow" };
 let currentJob = null;
 let pollTimer = null;
 const analysisResults = {};
 const apiEnabled = window.location.protocol !== "file:";
-
-function byId(scenario, id) {
-  for (let i = 0; i < scenario.nodes.length; i += 1) {
-    if (scenario.nodes[i].id === id) {
-      return scenario.nodes[i];
-    }
-  }
-  return null;
-}
 
 function escapeHtml(value) {
   return String(value)
@@ -270,6 +39,13 @@ function escapeHtml(value) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+function titleFromName(name) {
+  return String(name || "")
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 function setState(text, tone = "green") {
@@ -287,31 +63,123 @@ window.addEventListener("error", (event) => {
   setState(`UI error: ${event.message}`, "red");
 });
 
-function expectedHops(scenario, nodeId) {
-  let route = null;
+function normalizeScenario(raw) {
+  const staticRoutes = raw.static_routes || {};
+  const routes = Array.isArray(raw.routes)
+    ? raw.routes
+    : Object.keys(staticRoutes).map((node) => ({
+        node: Number(node),
+        nextHop: Number(staticRoutes[node])
+      }));
+
+  const nodes = Array.isArray(raw.nodes)
+    ? raw.nodes.map((item) => {
+        if (typeof item === "number") {
+          return {
+            id: item,
+            role: item === raw.sink ? "sink" : "edge"
+          };
+        }
+        return {
+          id: Number(item.id),
+          role: item.role || (Number(item.id) === raw.sink ? "sink" : "edge")
+        };
+      })
+    : [];
+
+  const edges = Array.isArray(raw.edges)
+    ? raw.edges.map((edge) => ({
+        src: Number(edge.src),
+        dst: Number(edge.dst),
+        label: edge.label || `${edge.src}->${edge.dst}`,
+        gain: edge.gain,
+        variant: edge.variant || ""
+      }))
+    : [];
+
+  return {
+    name: raw.name,
+    label: raw.label || titleFromName(raw.name),
+    description: raw.description || "",
+    category: raw.category || "configured scenario",
+    sink: Number(raw.sink || 1),
+    responders: (raw.responders || []).map(Number),
+    events: raw.event_count || raw.events || 0,
+    noise: raw.noise || "configured",
+    links: raw.links || edges.length,
+    configPath: raw.config_path || raw.configPath || "",
+    topoPath: raw.topo_path || raw.topoPath || "",
+    routes,
+    nodes,
+    edges
+  };
+}
+
+function apiJson(path, options = {}) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const method = options.method || "GET";
+    xhr.open(method, path, true);
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.onreadystatechange = () => {
+      if (xhr.readyState !== 4) {
+        return;
+      }
+
+      let payload = {};
+      if (xhr.responseText) {
+        try {
+          payload = JSON.parse(xhr.responseText);
+        } catch (error) {
+          payload = {};
+        }
+      }
+
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(payload);
+      } else {
+        reject(new Error(payload.error || `HTTP ${xhr.status}`));
+      }
+    };
+    xhr.onerror = () => reject(new Error("Run API unavailable"));
+    xhr.send(options.body || null);
+  });
+}
+
+function routeForNode(scenario, nodeId) {
   for (let i = 0; i < scenario.routes.length; i += 1) {
-    if (scenario.routes[i].node === nodeId) {
-      route = scenario.routes[i];
-      break;
+    if (Number(scenario.routes[i].node) === Number(nodeId)) {
+      return scenario.routes[i];
     }
   }
-  if (!route) {
-    return 1;
+  return null;
+}
+
+function expectedHops(scenario, nodeId) {
+  let hops = 1;
+  let current = Number(nodeId);
+  const seen = {};
+
+  while (current !== scenario.sink && !seen[current]) {
+    seen[current] = true;
+    const route = routeForNode(scenario, current);
+    if (!route) {
+      return hops;
+    }
+    current = Number(route.nextHop);
+    if (current !== scenario.sink) {
+      hops += 1;
+    }
   }
-  return route.nextHop === scenario.sink ? 1 : 2;
+
+  return hops;
 }
 
 function scenarioHealth(scenario) {
   if (scenario.routes.length) {
     return "multi-hop";
   }
-  if (scenario.type === "failure mode") {
-    return "asymmetric";
-  }
-  if (scenario.type === "loss model") {
-    return "weak link";
-  }
-  return "direct";
+  return "configured";
 }
 
 function nativeRunCommand(scenarioKey) {
@@ -347,10 +215,63 @@ function formatMetric(value, suffix = "") {
   return `${value.toFixed(2)}${suffix}`;
 }
 
+function expectedAverageHops(scenario) {
+  if (!scenario.responders.length) {
+    return 0;
+  }
+
+  let total = 0;
+  for (let i = 0; i < scenario.responders.length; i += 1) {
+    total += expectedHops(scenario, scenario.responders[i]);
+  }
+  return total / scenario.responders.length;
+}
+
+function layoutNodes(scenario) {
+  const levels = {};
+  const nodesById = {};
+
+  scenario.nodes.forEach((node) => {
+    nodesById[node.id] = node;
+    levels[node.id] = node.id === scenario.sink ? 0 : expectedHops(scenario, node.id);
+  });
+
+  const grouped = {};
+  Object.keys(levels).forEach((nodeId) => {
+    const level = levels[nodeId];
+    if (!grouped[level]) {
+      grouped[level] = [];
+    }
+    grouped[level].push(Number(nodeId));
+  });
+
+  const positioned = {};
+  Object.keys(grouped).forEach((levelKey) => {
+    const level = Number(levelKey);
+    const ids = grouped[level].sort((a, b) => a - b);
+    const y = 72 + level * 118;
+    const span = 520;
+    const start = 360 - span / 2;
+
+    ids.forEach((nodeId, index) => {
+      const x = ids.length === 1 ? 360 : start + (span * index) / (ids.length - 1);
+      const node = nodesById[nodeId];
+      positioned[nodeId] = {
+        id: nodeId,
+        role: node ? node.role : "edge",
+        x,
+        y
+      };
+    });
+  });
+
+  return positioned;
+}
+
 function renderScenarioList() {
   elements.scenarioList.innerHTML = "";
 
-  Object.keys(scenarios).forEach((key) => {
+  scenarioOrder.forEach((key) => {
     const scenario = scenarios[key];
     const button = document.createElement("button");
     button.type = "button";
@@ -362,7 +283,6 @@ function renderScenarioList() {
     button.addEventListener("click", () => {
       activeScenario = key;
       render();
-      loadResult(activeScenario, true);
     });
     elements.scenarioList.appendChild(button);
   });
@@ -392,7 +312,7 @@ function renderRoutes(scenario) {
 
   scenario.routes.forEach((route) => {
     const item = document.createElement("div");
-    const hopTone = route.nextHop === scenario.sink ? "green" : "orange";
+    const hopTone = Number(route.nextHop) === scenario.sink ? "green" : "orange";
     item.className = "list-group-item";
     item.innerHTML = `
       <div class="route-item">
@@ -407,8 +327,48 @@ function renderRoutes(scenario) {
   });
 }
 
-function renderTopology(scenario) {
+function renderTopologyEmpty(message, detail) {
   const svg = elements.topologySvg;
+  svg.innerHTML = "";
+  const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  group.setAttribute("class", "topology-empty");
+
+  const box = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+  box.setAttribute("x", 170);
+  box.setAttribute("y", 128);
+  box.setAttribute("width", 380);
+  box.setAttribute("height", 118);
+  box.setAttribute("rx", 8);
+
+  const title = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  title.setAttribute("x", 360);
+  title.setAttribute("y", 174);
+  title.setAttribute("class", "empty-title");
+  title.textContent = message;
+
+  const body = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  body.setAttribute("x", 360);
+  body.setAttribute("y", 205);
+  body.setAttribute("class", "empty-detail");
+  body.textContent = detail;
+
+  group.appendChild(box);
+  group.appendChild(title);
+  group.appendChild(body);
+  svg.appendChild(group);
+}
+
+function renderTopology(scenario, result) {
+  if (!result) {
+    renderTopologyEmpty(
+      "No simulation result loaded",
+      "Click Run simulation to draw topology for this scenario."
+    );
+    return;
+  }
+
+  const svg = elements.topologySvg;
+  const positions = layoutNodes(scenario);
   svg.innerHTML = `
     <defs>
       <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
@@ -417,44 +377,53 @@ function renderTopology(scenario) {
     </defs>
   `;
 
-  scenario.edges.forEach(([from, to, label, variant]) => {
-    const a = byId(scenario, from);
-    const b = byId(scenario, to);
+  scenario.edges.forEach((edge) => {
+    const a = positions[edge.src];
+    const b = positions[edge.dst];
+    if (!a || !b) {
+      return;
+    }
+
     const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
     line.setAttribute("x1", a.x);
     line.setAttribute("y1", a.y);
     line.setAttribute("x2", b.x);
     line.setAttribute("y2", b.y);
-    line.setAttribute("class", `topology-link ${variant || ""}`.trim());
+    line.setAttribute("class", `topology-link ${edge.variant || ""}`.trim());
     svg.appendChild(line);
 
     const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
     text.setAttribute("x", (a.x + b.x) / 2);
     text.setAttribute("y", (a.y + b.y) / 2 - 8);
     text.setAttribute("class", "link-label");
-    text.textContent = label;
+    text.textContent = edge.label;
     svg.appendChild(text);
   });
 
   scenario.nodes.forEach((node) => {
+    const positioned = positions[node.id];
+    if (!positioned) {
+      return;
+    }
+
     const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    group.setAttribute("class", `topology-node ${node.role}`);
+    group.setAttribute("class", `topology-node ${positioned.role}`);
 
     const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    circle.setAttribute("cx", node.x);
-    circle.setAttribute("cy", node.y);
+    circle.setAttribute("cx", positioned.x);
+    circle.setAttribute("cy", positioned.y);
     circle.setAttribute("r", 28);
 
     const id = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    id.setAttribute("x", node.x);
-    id.setAttribute("y", node.y + 1);
-    id.textContent = node.id;
+    id.setAttribute("x", positioned.x);
+    id.setAttribute("y", positioned.y + 1);
+    id.textContent = positioned.id;
 
     const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    label.setAttribute("x", node.x);
-    label.setAttribute("y", node.y + 48);
+    label.setAttribute("x", positioned.x);
+    label.setAttribute("y", positioned.y + 48);
     label.setAttribute("class", "node-label");
-    label.textContent = node.role;
+    label.textContent = positioned.role;
 
     group.appendChild(circle);
     group.appendChild(id);
@@ -467,54 +436,24 @@ function metricConfig(scenario, result) {
   if (result && result.overall) {
     const overall = result.overall;
     return [
-      [
-        "Packet reception",
-        formatPercent(overall.packet_reception_rate),
-        overall.packet_reception_rate || 0,
-        "green"
-      ],
-      [
-        "End-to-end",
-        formatPercent(overall.end_to_end_success_rate),
-        overall.end_to_end_success_rate || 0,
-        "primary"
-      ],
-      [
-        "Avg delay",
-        formatMetric(overall.average_delay, " ms"),
-        Math.min(overall.average_delay || 0, 100),
-        "orange"
-      ],
-      [
-        "Avg hops",
-        formatMetric(overall.average_hop_count),
-        Math.min((overall.average_hop_count || 0) * 35, 100),
-        "azure"
-      ]
+      ["Packet reception", formatPercent(overall.packet_reception_rate), overall.packet_reception_rate || 0, "green"],
+      ["End-to-end", formatPercent(overall.end_to_end_success_rate), overall.end_to_end_success_rate || 0, "primary"],
+      ["Avg delay", formatMetric(overall.average_delay, " ms"), Math.min(overall.average_delay || 0, 100), "orange"],
+      ["Avg hops", formatMetric(overall.average_hop_count), Math.min((overall.average_hop_count || 0) * 35, 100), "azure"]
     ];
   }
 
-  const expectedReplies = scenario.responders.length;
   const routedResponders = scenario.responders.filter((id) => expectedHops(scenario, id) > 1).length;
   return [
-    ["Expected replies", `${expectedReplies} / seq`, Math.min(expectedReplies * 20, 100), "primary"],
+    ["Configured responders", String(scenario.responders.length), Math.min(scenario.responders.length * 20, 100), "primary"],
     ["Multi-hop origins", String(routedResponders), Math.min(routedResponders * 35, 100), routedResponders ? "orange" : "green"],
     ["Avg hop target", expectedAverageHops(scenario).toFixed(2), Math.min(expectedAverageHops(scenario) * 35, 100), "azure"],
-    ["Real run status", "pending", 0, "secondary"]
+    ["Simulation data", "not loaded", 0, "secondary"]
   ];
-}
-
-function expectedAverageHops(scenario) {
-  if (!scenario.responders.length) {
-    return 0;
-  }
-  const total = scenario.responders.reduce((sum, id) => sum + expectedHops(scenario, id), 0);
-  return total / scenario.responders.length;
 }
 
 function renderMetrics(scenario, result) {
   elements.metricStack.innerHTML = "";
-
   metricConfig(scenario, result).forEach(([label, value, meter, tone]) => {
     const metric = document.createElement("div");
     metric.className = "metric-row";
@@ -531,11 +470,6 @@ function renderMetrics(scenario, result) {
   });
 }
 
-function roleForNode(scenario, nodeId) {
-  const node = byId(scenario, nodeId);
-  return node ? node.role : "edge";
-}
-
 function roleBadgeClass(role) {
   if (role === "sink") {
     return "bg-blue-lt text-blue";
@@ -546,11 +480,31 @@ function roleBadgeClass(role) {
   return "bg-green-lt text-green";
 }
 
+function roleForNode(scenario, nodeId) {
+  for (let i = 0; i < scenario.nodes.length; i += 1) {
+    if (scenario.nodes[i].id === nodeId) {
+      return scenario.nodes[i].role;
+    }
+  }
+  return "edge";
+}
+
 function renderStats(scenario, result) {
   elements.statsBody.innerHTML = "";
   elements.tableBadge.textContent = result
     ? `from ${result.log_path || "analysis JSON"}`
-    : `${scenario.responders.length} responders`;
+    : "waiting for run";
+
+  if (!result) {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td colspan="8" class="empty-cell">
+        No per-node simulation data yet. Click Run simulation to populate this table.
+      </td>
+    `;
+    elements.statsBody.appendChild(row);
+    return;
+  }
 
   const statsByNode = {};
   if (result && Array.isArray(result.per_node)) {
@@ -561,13 +515,12 @@ function renderStats(scenario, result) {
 
   scenario.responders.forEach((nodeId) => {
     const role = roleForNode(scenario, nodeId);
-    const hops = expectedHops(scenario, nodeId);
     const stats = statsByNode[nodeId];
     const row = document.createElement("tr");
     row.innerHTML = `
       <td class="fw-bold">node ${nodeId}</td>
       <td><span class="badge role-badge ${roleBadgeClass(role)}">${role}</span></td>
-      <td>${stats ? stats.expected : "1 / seq"}</td>
+      <td>${stats ? stats.expected : "pending"}</td>
       <td>${stats ? stats.received : '<span class="text-secondary">pending</span>'}</td>
       <td>${stats ? stats.loss : '<span class="text-secondary">pending</span>'}</td>
       <td>${
@@ -576,7 +529,7 @@ function renderStats(scenario, result) {
           : '<span class="badge bg-secondary-lt">after run</span>'
       }</td>
       <td>${stats ? formatMetric(stats.average_delay, " ms") : '<span class="text-secondary">after run</span>'}</td>
-      <td>${stats ? formatMetric(stats.average_hop_count) : hops.toFixed(2)}</td>
+      <td>${stats ? formatMetric(stats.average_hop_count) : formatMetric(expectedHops(scenario, nodeId))}</td>
     `;
     elements.statsBody.appendChild(row);
   });
@@ -584,8 +537,19 @@ function renderStats(scenario, result) {
 
 function renderFlow(scenario) {
   elements.flowList.innerHTML = "";
+  const flow = scenario.routes.length
+    ? [
+        ["REQUEST", "sink sends request packets into the configured topology"],
+        ["FORWARD", "nodes with static_routes relay packets by next hop"],
+        ["ANALYZE", "analyze_log.py reads RECV_AT_SINK and hop_count fields"]
+      ]
+    : [
+        ["REQUEST", "sink sends request packets"],
+        ["REPLY", "responders reply directly to the sink"],
+        ["ANALYZE", "analyze_log.py computes per-responder statistics"]
+      ];
 
-  scenario.flow.forEach(([title, detail]) => {
+  flow.forEach(([title, detail]) => {
     const item = document.createElement("li");
     item.className = "step-item";
     item.innerHTML = `
@@ -596,10 +560,9 @@ function renderFlow(scenario) {
   });
 }
 
-function renderLogs(scenario) {
+function renderLogs(result) {
   elements.logStream.innerHTML = "";
-
-  const liveLines =
+  let lines =
     currentJob &&
     currentJob.scenario === activeScenario &&
     Array.isArray(currentJob.output_tail) &&
@@ -610,7 +573,13 @@ function renderLogs(scenario) {
         ])
       : null;
 
-  const lines = liveLines || scenario.log;
+  if (!lines && result) {
+    lines = [[`Analysis JSON loaded from ${result.log_path || "log file"}. Run again to see live command output here.`, "success"]];
+  }
+  if (!lines) {
+    lines = [["No run started in this UI session.", ""]];
+  }
+
   lines.forEach(([text, tone]) => {
     const line = document.createElement("div");
     line.className = `log-line ${tone}`.trim();
@@ -620,14 +589,6 @@ function renderLogs(scenario) {
 }
 
 function renderReport(scenario, result) {
-  const routeText = scenario.routes.length
-    ? scenario.routes.map((route) => `${route.node}->${route.nextHop}`).join(", ")
-    : `responders reply directly to sink ${scenario.sink}`;
-
-  const nonDirect = scenario.responders
-    .filter((id) => expectedHops(scenario, id) > 1)
-    .map((id) => `node ${id}`);
-
   if (result && result.overall) {
     const overall = result.overall;
     const missingCount = Array.isArray(result.missing_replies)
@@ -663,110 +624,121 @@ function renderReport(scenario, result) {
   }
 
   elements.reportSnippet.textContent = [
-    `### ${scenario.label}`,
+    "No report evidence yet.",
     "",
+    `Selected scenario: ${scenario.label}`,
     `Config: ${scenario.configPath}`,
-    `Topology: ${scenario.topoPath}`,
-    `Experiment type: ${scenario.category}`,
-    `Sink: node ${scenario.sink}`,
-    `Responders: ${scenario.responders.map((id) => `node ${id}`).join(", ")}`,
-    `Directed links: ${scenario.links}`,
-    `Routing: ${routeText}`,
-    `Expected hop average: ${expectedAverageHops(scenario).toFixed(2)}`,
     "",
-    nonDirect.length
-      ? `Non-direct sink nodes: ${nonDirect.join(", ")}`
-      : "Non-direct sink nodes: none in this scenario",
-    "",
-    "After a real run, fill these from analyze_log.py:",
-    "- packet reception rate",
-    "- end-to-end success rate",
-    "- average delay by origin",
-    "- average hop_count",
-    "- missing origin/seq pairs"
+    "Click Run simulation. After analyze_log.py writes JSON, this panel will show the report-ready metrics."
   ].join("\n");
 }
 
+function renderEmptyApp(message) {
+  elements.scenarioList.innerHTML = "";
+  elements.title.textContent = "No scenario loaded";
+  elements.category.textContent = "runner unavailable";
+  elements.command.textContent = "Start with ./ui/run-ui.sh";
+  elements.sink.textContent = "-";
+  elements.responders.textContent = "-";
+  elements.events.textContent = "-";
+  elements.noise.textContent = "-";
+  elements.linkCount.textContent = "0 directed links";
+  elements.routeList.innerHTML = "";
+  elements.metricStack.innerHTML = "";
+  elements.statsBody.innerHTML = `<tr><td colspan="8" class="empty-cell">${escapeHtml(message)}</td></tr>`;
+  elements.flowList.innerHTML = "";
+  elements.logStream.innerHTML = `<div class="log-line drop">${escapeHtml(message)}</div>`;
+  elements.reportSnippet.textContent = message;
+  renderTopologyEmpty("No scenario loaded", message);
+}
+
 function render() {
+  if (!activeScenario || !scenarios[activeScenario]) {
+    renderEmptyApp(apiEnabled ? "No scenario data returned by /api/scenarios." : "Open this page through ui/run-ui.sh.");
+    renderRunState();
+    return;
+  }
+
   const scenario = scenarios[activeScenario];
   const result = resultFor(activeScenario);
 
   renderScenarioList();
-  elements.title.textContent = `${scenario.label}`;
+  elements.title.textContent = scenario.label;
   elements.category.textContent = `${scenario.category} · ${scenarioHealth(scenario)}`;
   elements.command.textContent = nativeRunCommand(activeScenario);
   renderRunState();
   elements.sink.textContent = scenario.sink;
   elements.responders.textContent = scenario.responders.join(", ");
-  elements.events.textContent = scenario.events.toLocaleString();
+  elements.events.textContent = Number(scenario.events || 0).toLocaleString();
   elements.noise.textContent = scenario.noise;
   elements.linkCount.textContent = `${scenario.links} directed links`;
 
   renderRoutes(scenario);
-  renderTopology(scenario);
+  renderTopology(scenario, result);
   renderMetrics(scenario, result);
   renderStats(scenario, result);
   renderFlow(scenario);
-  renderLogs(scenario);
+  renderLogs(result);
   renderReport(scenario, result);
 }
 
-async function copyText(text, successLabel) {
-  try {
-    await navigator.clipboard.writeText(text);
-    setState(successLabel, "azure");
-  } catch (error) {
+function copyText(text, successLabel) {
+  if (!navigator.clipboard) {
     setState("Clipboard unavailable", "yellow");
-  }
-}
-
-async function apiJson(path, options = {}) {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    const method = options.method || "GET";
-    xhr.open(method, path, true);
-    xhr.setRequestHeader("Content-Type", "application/json");
-    xhr.onreadystatechange = () => {
-      if (xhr.readyState !== 4) {
-        return;
-      }
-
-      let payload = {};
-      if (xhr.responseText) {
-        try {
-          payload = JSON.parse(xhr.responseText);
-        } catch (error) {
-          payload = {};
-        }
-      }
-
-      if (xhr.status >= 200 && xhr.status < 300) {
-        resolve(payload);
-      } else {
-        reject(new Error(payload.error || `HTTP ${xhr.status}`));
-      }
-    };
-    xhr.onerror = () => reject(new Error("Run API unavailable"));
-    xhr.send(options.body || null);
-  });
-}
-
-async function loadResult(scenarioKey, silent = false) {
-  if (!apiEnabled) {
     return;
   }
 
-  try {
-    const result = await apiJson(`/api/results?scenario=${encodeURIComponent(scenarioKey)}`);
-    analysisResults[scenarioKey] = result;
-    if (activeScenario === scenarioKey) {
-      render();
-    }
-  } catch (error) {
-    if (!silent) {
-      setState(`No result yet for ${scenarioKey}`, "yellow");
-    }
+  navigator.clipboard
+    .writeText(text)
+    .then(() => setState(successLabel, "azure"))
+    .catch(() => setState("Clipboard unavailable", "yellow"));
+}
+
+function loadScenarios() {
+  if (!apiEnabled) {
+    setState("Start with ./ui/run-ui.sh", "yellow");
+    render();
+    return;
   }
+
+  apiJson("/api/scenarios")
+    .then((payload) => {
+      scenarios = {};
+      scenarioOrder = [];
+      const list = payload.scenarios || [];
+      list.forEach((raw) => {
+        const scenario = normalizeScenario(raw);
+        scenarios[scenario.name] = scenario;
+        scenarioOrder.push(scenario.name);
+      });
+
+      activeScenario = scenarioOrder.length ? scenarioOrder[0] : null;
+      setState(activeScenario ? "Ready" : "No scenarios found", activeScenario ? "green" : "red");
+      render();
+    })
+    .catch((error) => {
+      setState(error.message, "red");
+      render();
+    });
+}
+
+function loadResult(scenarioKey, silent = false) {
+  if (!apiEnabled || !scenarioKey) {
+    return Promise.resolve();
+  }
+
+  return apiJson(`/api/results?scenario=${encodeURIComponent(scenarioKey)}`)
+    .then((result) => {
+      analysisResults[scenarioKey] = result;
+      if (activeScenario === scenarioKey) {
+        render();
+      }
+    })
+    .catch(() => {
+      if (!silent) {
+        setState(`No result yet for ${scenarioKey}`, "yellow");
+      }
+    });
 }
 
 function stopPolling() {
@@ -776,38 +748,38 @@ function stopPolling() {
   }
 }
 
-async function pollStatus() {
+function pollStatus() {
   if (!apiEnabled) {
     return;
   }
 
-  try {
-    currentJob = await apiJson("/api/status");
-  } catch (error) {
-    stopPolling();
-    setState("Run API unavailable", "yellow");
-    return;
-  }
+  apiJson("/api/status")
+    .then((job) => {
+      currentJob = job;
 
-  if (currentJob.status === "running") {
-    setState(currentJob.message || "Simulation running", "yellow");
-    render();
-    return;
-  }
+      if (currentJob.status === "running") {
+        setState(currentJob.message || "Simulation running", "yellow");
+        render();
+        return;
+      }
 
-  if (currentJob.status === "complete") {
-    stopPolling();
-    setState("Simulation complete. Results loaded.", "green");
-    await loadResult(currentJob.scenario || activeScenario, false);
-    render();
-    return;
-  }
+      if (currentJob.status === "complete") {
+        stopPolling();
+        setState("Simulation complete. Results loaded.", "green");
+        loadResult(currentJob.scenario || activeScenario, false).then(render);
+        return;
+      }
 
-  if (currentJob.status === "failed") {
-    stopPolling();
-    setState(currentJob.message || "Simulation failed", "red");
-    render();
-  }
+      if (currentJob.status === "failed") {
+        stopPolling();
+        setState(currentJob.message || "Simulation failed", "red");
+        render();
+      }
+    })
+    .catch(() => {
+      stopPolling();
+      setState("Run API unavailable", "yellow");
+    });
 }
 
 function startPolling() {
@@ -816,33 +788,43 @@ function startPolling() {
   pollTimer = window.setInterval(pollStatus, 1500);
 }
 
-async function runActiveScenario() {
+function runActiveScenario() {
   if (!apiEnabled) {
     setState("Start with ./ui/run-ui.sh, then open http://localhost:8080/skeleton/", "yellow");
     return;
   }
-
-  try {
-    await apiJson("/api/run", {
-      method: "POST",
-      body: JSON.stringify({
-        scenario: activeScenario,
-        build: true
-      })
-    });
-    setState(`Running ${activeScenario}`, "yellow");
-    startPolling();
-  } catch (error) {
-    setState(error.message, "red");
+  if (!activeScenario) {
+    setState("No scenario selected", "red");
+    return;
   }
+
+  delete analysisResults[activeScenario];
+  currentJob = null;
+  render();
+
+  apiJson("/api/run", {
+    method: "POST",
+    body: JSON.stringify({
+      scenario: activeScenario,
+      build: true
+    })
+  })
+    .then(() => {
+      setState(`Running ${activeScenario}`, "yellow");
+      startPolling();
+    })
+    .catch((error) => {
+      setState(error.message, "red");
+    });
 }
 
 elements.runButton.addEventListener("click", runActiveScenario);
 
 elements.inspectButton.addEventListener("click", () => {
-  const scenario = scenarios[activeScenario];
-  loadResult(activeScenario, false);
-  setState(`${scenario.configPath} selected`, "azure");
+  if (activeScenario) {
+    loadResult(activeScenario, false);
+    setState(`${scenarios[activeScenario].configPath} selected`, "azure");
+  }
 });
 
 elements.copyCommandButton.addEventListener("click", () => {
@@ -854,8 +836,4 @@ elements.copyEvidenceButton.addEventListener("click", () => {
 });
 
 render();
-loadResult(activeScenario, true);
-if (apiEnabled) {
-  pollStatus();
-  window.setInterval(() => loadResult(activeScenario, true), 5000);
-}
+loadScenarios();
