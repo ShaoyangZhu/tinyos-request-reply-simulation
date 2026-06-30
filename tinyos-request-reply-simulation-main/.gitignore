@@ -1,0 +1,17 @@
+# TinyOS/TOSSIM generated files
+simbuild/
+build/
+_TOSSIMmodule.so
+TOSSIM.py
+TOSSIM.pyc
+app.xml
+*.o
+*.so
+*.pyc
+
+# logs
+log.txt
+
+# editor/system files
+*~
+.DS_Store
