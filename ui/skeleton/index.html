@@ -4,157 +4,280 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>TOSSIM Experiment Console</title>
+    <link rel="stylesheet" href="../vendor/tabler/tabler.min.css">
+    <link rel="stylesheet" href="../vendor/tabler/tabler-themes.min.css">
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
-    <div class="app-shell">
-      <aside class="sidebar" aria-label="Scenarios">
-        <div class="brand">
-          <span class="brand-mark" aria-hidden="true">T</span>
-          <div>
-            <h1>TOSSIM Console</h1>
-            <p>Request-reply lab</p>
+    <div class="page">
+      <aside class="navbar navbar-vertical navbar-expand-lg navbar-dark d-print-none">
+        <div class="container-fluid">
+          <button
+            class="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#sidebar-menu"
+            aria-controls="sidebar-menu"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
+          >
+            <span class="navbar-toggler-icon"></span>
+          </button>
+
+          <h1 class="navbar-brand navbar-brand-autodark">
+            <span class="brand-mark" aria-hidden="true">WSN</span>
+            <span class="brand-copy">
+              <span>TOSSIM Console</span>
+              <small>Request-reply lab</small>
+            </span>
+          </h1>
+
+          <div class="collapse navbar-collapse" id="sidebar-menu">
+            <div class="sidebar-section">
+              <div class="nav-label">Scenarios</div>
+              <div class="scenario-nav" id="scenarioList" aria-label="Scenario list"></div>
+            </div>
+
+            <div class="sidebar-section mt-auto">
+              <div class="nav-label">Run Target</div>
+              <div class="card card-sm run-target">
+                <div class="card-body">
+                  <div class="d-flex align-items-center">
+                    <span class="status-dot status-dot-animated bg-green me-2"></span>
+                    <div>
+                      <div class="text-secondary small">Container image</div>
+                      <div class="fw-bold text-truncate">tinyos-request-reply:local</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="text-secondary small mt-2 px-1">UI preview only. It never starts TOSSIM.</div>
+            </div>
           </div>
         </div>
-
-        <nav class="scenario-list" id="scenarioList" aria-label="Scenario list"></nav>
       </aside>
 
-      <main class="workspace">
-        <header class="topbar">
-          <div>
-            <p class="eyebrow">Scenario</p>
-            <h2 id="scenarioTitle">multihop_chain</h2>
-          </div>
-          <div class="actions">
-            <button type="button" class="button secondary" id="inspectButton">Inspect</button>
-            <button type="button" class="button primary" id="runButton">Run</button>
-            <button type="button" class="icon-button" id="exportButton" aria-label="Export evidence" title="Export evidence">
-              <span aria-hidden="true">↓</span>
-            </button>
+      <div class="page-wrapper">
+        <header class="navbar navbar-expand-md d-print-none">
+          <div class="container-xl">
+            <div class="navbar-nav flex-row order-md-last ms-auto">
+              <button class="btn btn-icon me-2" type="button" id="inspectButton" title="Inspect scenario" aria-label="Inspect scenario">
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M10 10a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"></path>
+                  <path d="M21 21l-6 -6"></path>
+                  <path d="M3 10a7 7 0 1 0 14 0a7 7 0 0 0 -14 0"></path>
+                </svg>
+              </button>
+              <button class="btn me-2" type="button" id="copyCommandButton">
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M8 8m0 2a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2z"></path>
+                  <path d="M16 8v-2a2 2 0 0 0 -2 -2h-8a2 2 0 0 0 -2 2v8a2 2 0 0 0 2 2h2"></path>
+                </svg>
+                Copy command
+              </button>
+              <button class="btn btn-primary" type="button" id="runButton">
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M7 4v16l13 -8z"></path>
+                </svg>
+                Queue preview
+              </button>
+            </div>
+            <div class="navbar-text">
+              <span class="badge bg-azure-lt text-azure">Tabler UI</span>
+              <span class="badge bg-yellow-lt text-yellow ms-2">simulation disabled</span>
+            </div>
           </div>
         </header>
 
-        <section class="status-strip" aria-label="Run summary">
-          <div>
-            <span class="label">Container command</span>
-            <code id="commandText">sh container/run-in-container.sh multihop_chain</code>
+        <div class="page-header d-print-none">
+          <div class="container-xl">
+            <div class="row g-2 align-items-center">
+              <div class="col">
+                <div class="page-pretitle" id="scenarioCategory">multi-hop routing</div>
+                <h2 class="page-title" id="scenarioTitle">multihop_chain</h2>
+              </div>
+              <div class="col-auto ms-auto d-print-none">
+                <div class="btn-list">
+                  <span class="badge bg-green-lt text-green" id="routeMode">static next-hop</span>
+                  <span class="badge bg-blue-lt text-blue" id="linkCount">8 directed links</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <div>
-            <span class="label">Run state</span>
-            <strong id="runState">Not started</strong>
+        </div>
+
+        <div class="page-body">
+          <div class="container-xl">
+            <div class="alert alert-info d-flex align-items-center command-strip" role="status">
+              <svg class="icon alert-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 7l5 5l-5 5"></path>
+                <path d="M13 17h6"></path>
+              </svg>
+              <div class="flex-fill min-w-0">
+                <div class="text-secondary small">Command preview</div>
+                <code id="commandText">sh container/run-in-container.sh multihop_chain</code>
+              </div>
+              <span class="badge bg-green-lt text-green ms-3" id="runState">Ready</span>
+            </div>
+
+            <div class="row row-deck row-cards mb-3">
+              <div class="col-sm-6 col-lg-3">
+                <div class="card metric-card">
+                  <div class="card-body">
+                    <div class="subheader">Sink</div>
+                    <div class="h1 mb-0" id="sinkValue">1</div>
+                    <div class="text-secondary">collector node</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-sm-6 col-lg-3">
+                <div class="card metric-card">
+                  <div class="card-body">
+                    <div class="subheader">Responders</div>
+                    <div class="h1 mb-0 text-truncate" id="respondersValue">2, 3, 4, 5</div>
+                    <div class="text-secondary">from scenario config</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-sm-6 col-lg-3">
+                <div class="card metric-card">
+                  <div class="card-body">
+                    <div class="subheader">Events</div>
+                    <div class="h1 mb-0" id="eventsValue">50000</div>
+                    <div class="text-secondary">TOSSIM event count</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-sm-6 col-lg-3">
+                <div class="card metric-card">
+                  <div class="card-body">
+                    <div class="subheader">Noise</div>
+                    <div class="h1 mb-0 text-truncate" id="noiseValue">-95 dBm</div>
+                    <div class="text-secondary">noise trace summary</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row row-cards">
+              <div class="col-lg-8">
+                <div class="card topology-card">
+                  <div class="card-header">
+                    <div>
+                      <h3 class="card-title">Topology and routes</h3>
+                      <p class="card-subtitle">Scenario nodes, directed links, and static next-hop assumptions.</p>
+                    </div>
+                  </div>
+                  <div class="card-body">
+                    <div class="topology-stage">
+                      <svg id="topologySvg" viewBox="0 0 720 380" role="img" aria-label="Scenario topology"></svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-lg-4">
+                <div class="card">
+                  <div class="card-header">
+                    <h3 class="card-title">Static routes</h3>
+                  </div>
+                  <div class="list-group list-group-flush" id="routeList"></div>
+                </div>
+
+                <div class="card mt-3">
+                  <div class="card-header">
+                    <div>
+                      <h3 class="card-title">Metric preview</h3>
+                      <p class="card-subtitle">Placeholders until a real run writes log.txt.</p>
+                    </div>
+                  </div>
+                  <div class="card-body">
+                    <div class="metric-stack" id="metricStack"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-lg-8">
+                <div class="card">
+                  <div class="card-header">
+                    <div>
+                      <h3 class="card-title">Per-node statistics</h3>
+                      <p class="card-subtitle">Generated from responders in config.json, not fixed node IDs.</p>
+                    </div>
+                    <span class="badge bg-secondary-lt" id="tableBadge">preview</span>
+                  </div>
+                  <div class="table-responsive">
+                    <table class="table table-vcenter card-table">
+                      <thead>
+                        <tr>
+                          <th>Node</th>
+                          <th>Role</th>
+                          <th>Expected</th>
+                          <th>Received</th>
+                          <th>Loss</th>
+                          <th>Reception</th>
+                          <th>Delay</th>
+                          <th>Hops</th>
+                        </tr>
+                      </thead>
+                      <tbody id="statsBody"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-lg-4">
+                <div class="card">
+                  <div class="card-header">
+                    <h3 class="card-title">Packet flow</h3>
+                  </div>
+                  <div class="card-body">
+                    <ul class="steps steps-vertical flow-list" id="flowList"></ul>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-lg-6">
+                <div class="card">
+                  <div class="card-header">
+                    <div>
+                      <h3 class="card-title">Debug stream</h3>
+                      <p class="card-subtitle">Sample dbg events only.</p>
+                    </div>
+                    <span class="badge bg-dark-lt">log preview</span>
+                  </div>
+                  <div class="card-body">
+                    <div class="log-stream" id="logStream"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-lg-6">
+                <div class="card">
+                  <div class="card-header">
+                    <div>
+                      <h3 class="card-title">Report evidence</h3>
+                      <p class="card-subtitle">Copyable block for the later WSN design report.</p>
+                    </div>
+                    <button class="btn btn-icon" type="button" id="copyEvidenceButton" title="Copy evidence" aria-label="Copy evidence">
+                      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M8 8m0 2a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2z"></path>
+                        <path d="M16 8v-2a2 2 0 0 0 -2 -2h-8a2 2 0 0 0 -2 2v8a2 2 0 0 0 2 2h2"></path>
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="card-body">
+                    <pre class="report-snippet" id="reportSnippet"></pre>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        </section>
-
-        <section class="grid">
-          <article class="panel overview-panel">
-            <div class="panel-header">
-              <h3>Scenario Overview</h3>
-              <span class="badge" id="scenarioType">multi-hop</span>
-            </div>
-            <dl class="definition-grid">
-              <div>
-                <dt>Sink</dt>
-                <dd id="sinkValue">1</dd>
-              </div>
-              <div>
-                <dt>Responders</dt>
-                <dd id="respondersValue">2, 3, 4, 5</dd>
-              </div>
-              <div>
-                <dt>Events</dt>
-                <dd id="eventsValue">50000</dd>
-              </div>
-              <div>
-                <dt>Noise</dt>
-                <dd id="noiseValue">-95 dBm x 100</dd>
-              </div>
-            </dl>
-          </article>
-
-          <article class="panel route-panel">
-            <div class="panel-header">
-              <h3>Static Routes</h3>
-              <span class="badge warning" id="routeBadge">fixed</span>
-            </div>
-            <ul class="route-list" id="routeList"></ul>
-          </article>
-
-          <article class="panel topology-panel">
-            <div class="panel-header">
-              <h3>Topology</h3>
-              <span class="badge" id="linkCount">8 links</span>
-            </div>
-            <div class="topology-canvas" id="topologyCanvas" aria-label="Topology preview"></div>
-          </article>
-
-          <article class="panel metrics-panel">
-            <div class="panel-header">
-              <h3>Analysis Snapshot</h3>
-              <span class="badge muted">sample</span>
-            </div>
-            <div class="metrics-grid">
-              <div class="metric">
-                <span>PRR</span>
-                <strong id="prrValue">0.00%</strong>
-              </div>
-              <div class="metric">
-                <span>End-to-end</span>
-                <strong id="successValue">0.00%</strong>
-              </div>
-              <div class="metric">
-                <span>Avg delay</span>
-                <strong id="delayValue">0.00 ms</strong>
-              </div>
-              <div class="metric">
-                <span>Avg hops</span>
-                <strong id="hopValue">0.00</strong>
-              </div>
-            </div>
-          </article>
-
-          <article class="panel table-panel">
-            <div class="panel-header">
-              <h3>Per-Node Statistics</h3>
-              <span class="badge muted">pending log</span>
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Node</th>
-                    <th>Expected</th>
-                    <th>Received</th>
-                    <th>Loss</th>
-                    <th>Reception</th>
-                    <th>Delay</th>
-                    <th>Hops</th>
-                  </tr>
-                </thead>
-                <tbody id="statsBody"></tbody>
-              </table>
-            </div>
-          </article>
-
-          <article class="panel log-panel">
-            <div class="panel-header">
-              <h3>Event Log</h3>
-              <span class="badge muted">preview</span>
-            </div>
-            <div class="log-stream" id="logStream"></div>
-          </article>
-
-          <article class="panel report-panel">
-            <div class="panel-header">
-              <h3>Report Evidence</h3>
-              <span class="badge">Markdown</span>
-            </div>
-            <pre id="reportSnippet"></pre>
-          </article>
-        </section>
-      </main>
+        </div>
+      </div>
     </div>
 
+    <script src="../vendor/tabler/tabler.min.js"></script>
     <script src="app.js"></script>
   </body>
 </html>
