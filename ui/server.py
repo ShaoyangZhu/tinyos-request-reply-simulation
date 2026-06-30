@@ -242,6 +242,10 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 class TOSSIMUIHandler(SimpleHTTPRequestHandler):
     server_version = "TOSSIMUI/1.0"
 
+    def end_headers(self):
+        self.send_header("Cache-Control", "no-store")
+        SimpleHTTPRequestHandler.end_headers(self)
+
     def translate_path(self, path):
         parsed = urlparse(path)
         request_path = parsed.path

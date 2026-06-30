@@ -256,15 +256,20 @@ const analysisResults = {};
 const apiEnabled = window.location.protocol !== "file:";
 
 function byId(scenario, id) {
-  return scenario.nodes.find((node) => node.id === id);
+  for (let i = 0; i < scenario.nodes.length; i += 1) {
+    if (scenario.nodes[i].id === id) {
+      return scenario.nodes[i];
+    }
+  }
+  return null;
 }
 
 function escapeHtml(value) {
   return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 function setState(text, tone = "green") {
@@ -278,8 +283,18 @@ function renderRunState() {
   elements.runState.className = `badge bg-${currentRunState.tone}-lt text-${currentRunState.tone}`;
 }
 
+window.addEventListener("error", (event) => {
+  setState(`UI error: ${event.message}`, "red");
+});
+
 function expectedHops(scenario, nodeId) {
-  const route = scenario.routes.find((item) => item.node === nodeId);
+  let route = null;
+  for (let i = 0; i < scenario.routes.length; i += 1) {
+    if (scenario.routes[i].node === nodeId) {
+      route = scenario.routes[i];
+      break;
+    }
+  }
   if (!route) {
     return 1;
   }
@@ -335,7 +350,8 @@ function formatMetric(value, suffix = "") {
 function renderScenarioList() {
   elements.scenarioList.innerHTML = "";
 
-  Object.entries(scenarios).forEach(([key, scenario]) => {
+  Object.keys(scenarios).forEach((key) => {
+    const scenario = scenarios[key];
     const button = document.createElement("button");
     button.type = "button";
     button.className = `scenario-item${key === activeScenario ? " active" : ""}`;
@@ -705,18 +721,34 @@ async function copyText(text, successLabel) {
 }
 
 async function apiJson(path, options = {}) {
-  const response = await fetch(path, {
-    headers: {
-      "Content-Type": "application/json"
-    },
-    ...options
-  });
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const method = options.method || "GET";
+    xhr.open(method, path, true);
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.onreadystatechange = () => {
+      if (xhr.readyState !== 4) {
+        return;
+      }
 
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(payload.error || `HTTP ${response.status}`);
-  }
-  return payload;
+      let payload = {};
+      if (xhr.responseText) {
+        try {
+          payload = JSON.parse(xhr.responseText);
+        } catch (error) {
+          payload = {};
+        }
+      }
+
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(payload);
+      } else {
+        reject(new Error(payload.error || `HTTP ${xhr.status}`));
+      }
+    };
+    xhr.onerror = () => reject(new Error("Run API unavailable"));
+    xhr.send(options.body || null);
+  });
 }
 
 async function loadResult(scenarioKey, silent = false) {

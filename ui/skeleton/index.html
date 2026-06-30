@@ -115,7 +115,7 @@
               </svg>
               <div class="flex-fill min-w-0">
                 <div class="text-secondary small">Command preview</div>
-                <code id="commandText">sh container/run-in-container.sh multihop_chain</code>
+                <code id="commandText">make clean && make micaz sim && python sim.py multihop_chain --log logs/multihop_chain.txt && python analyze_log.py multihop_chain --log logs/multihop_chain.txt --json-out ui/results/multihop_chain.json</code>
               </div>
               <span class="badge bg-green-lt text-green ms-3" id="runState">Ready</span>
             </div>
