@@ -1,5 +1,6 @@
 from __future__ import print_function
 from TOSSIM import *
+import os
 import sys
 
 
@@ -36,6 +37,8 @@ SCENARIOS = [
         "event_count": 60000,
     },
 ]
+
+SCENARIO_BY_NAME = dict([(scenario["name"], scenario) for scenario in SCENARIOS])
 
 
 def link_gain(src, dst):
@@ -101,7 +104,32 @@ def run_scenario(scenario):
     print("Scenario finished: %s -> %s" % (scenario["name"], log_name))
 
 
-for scenario in SCENARIOS:
-    run_scenario(scenario)
+def run_all_scenarios():
+    script = os.path.basename(sys.argv[0])
 
-print("All scenarios finished.")
+    for scenario in SCENARIOS:
+        command = "%s %s %s" % (sys.executable, script, scenario["name"])
+        result = os.system(command)
+        if result != 0:
+            print("Scenario failed: %s" % scenario["name"])
+            sys.exit(1)
+
+    print("All scenarios finished.")
+
+
+def main():
+    if len(sys.argv) > 1:
+        scenario_name = sys.argv[1]
+        if scenario_name not in SCENARIO_BY_NAME:
+            print("Unknown scenario: %s" % scenario_name)
+            print("Available scenarios: %s" % ", ".join(sorted(SCENARIO_BY_NAME.keys())))
+            sys.exit(1)
+
+        run_scenario(SCENARIO_BY_NAME[scenario_name])
+        return
+
+    run_all_scenarios()
+
+
+if __name__ == "__main__":
+    main()

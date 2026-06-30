@@ -31,6 +31,15 @@ python analyze_log.py log_low_noise.txt log_medium_noise.txt log_high_noise.txt
 `analyze_log.py` prints the packet statistics, generates one report for each log,
 and creates `comparison_report.html` when multiple logs are analyzed together.
 
+Each scenario is run in a separate Python process so TOSSIM starts from a clean
+simulation state. You can also run one scenario at a time:
+
+```bash
+python sim.py low_noise
+python sim.py medium_noise
+python sim.py high_noise
+```
+
 ## Visualization
 
 Open the generated comparison report in a browser:
