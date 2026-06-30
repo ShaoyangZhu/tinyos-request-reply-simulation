@@ -1,0 +1,19 @@
+{
+  "name": "four_nodes",
+  "description": "Adds node 4 as another responder in a fully connected topology.",
+  "nodes": [1, 2, 3, 4],
+  "sink": 1,
+  "responders": [2, 3, 4],
+  "boot_times": {
+    "1": 1000,
+    "2": 2000,
+    "3": 3000,
+    "4": 4000
+  },
+  "event_count": 40000,
+  "noise": {
+    "model": "constant",
+    "value": -95,
+    "count": 100
+  }
+}

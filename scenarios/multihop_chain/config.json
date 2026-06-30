@@ -1,0 +1,26 @@
+{
+  "name": "multihop_chain",
+  "description": "Small multi-hop chain: node 4 routes through node 2, and node 5 routes through node 3.",
+  "nodes": [1, 2, 3, 4, 5],
+  "sink": 1,
+  "responders": [2, 3, 4, 5],
+  "static_routes": {
+    "2": 1,
+    "3": 1,
+    "4": 2,
+    "5": 3
+  },
+  "boot_times": {
+    "1": 1000,
+    "2": 2000,
+    "3": 3000,
+    "4": 4000,
+    "5": 5000
+  },
+  "event_count": 50000,
+  "noise": {
+    "model": "constant",
+    "value": -95,
+    "count": 100
+  }
+}

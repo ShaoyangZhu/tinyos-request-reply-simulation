@@ -1,0 +1,14 @@
+# src dst gain
+# Four-node fully connected topology for node-scale expansion.
+1 2 -50.0
+2 1 -50.0
+1 3 -50.0
+3 1 -50.0
+1 4 -50.0
+4 1 -50.0
+2 3 -50.0
+3 2 -50.0
+2 4 -50.0
+4 2 -50.0
+3 4 -50.0
+4 3 -50.0

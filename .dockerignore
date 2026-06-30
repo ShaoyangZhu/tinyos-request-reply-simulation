@@ -1,0 +1,15 @@
+.git/
+docs/
+build/
+simbuild/
+_TOSSIMmodule.so
+TOSSIM.py
+TOSSIM.pyc
+app.xml
+*.o
+*.so
+*.pyc
+log.txt
+logs/
+*~
+.DS_Store

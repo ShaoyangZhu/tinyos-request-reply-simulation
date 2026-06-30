@@ -1,0 +1,11 @@
+# src dst gain
+# Multi-hop chain with no direct links between node 4/5 and sink node 1.
+# Static routes: 4 -> 2 -> 1, 5 -> 3 -> 1.
+1 2 -50.0
+2 1 -50.0
+1 3 -50.0
+3 1 -50.0
+2 4 -50.0
+4 2 -50.0
+3 5 -50.0
+5 3 -50.0

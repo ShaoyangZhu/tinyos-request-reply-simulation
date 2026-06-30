@@ -1,0 +1,18 @@
+{
+  "name": "weak_link",
+  "description": "Keeps three nodes but weakens the link between sink node 1 and responder node 3.",
+  "nodes": [1, 2, 3],
+  "sink": 1,
+  "responders": [2, 3],
+  "boot_times": {
+    "1": 1000,
+    "2": 2000,
+    "3": 3000
+  },
+  "event_count": 30000,
+  "noise": {
+    "model": "constant",
+    "value": -95,
+    "count": 100
+  }
+}

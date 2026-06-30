@@ -1,0 +1,9 @@
+services:
+  tossim:
+    build:
+      context: .
+    image: tinyos-request-reply:local
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: ["baseline"]

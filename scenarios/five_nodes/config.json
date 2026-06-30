@@ -1,0 +1,20 @@
+{
+  "name": "five_nodes",
+  "description": "Five-node fully connected topology with four responder nodes.",
+  "nodes": [1, 2, 3, 4, 5],
+  "sink": 1,
+  "responders": [2, 3, 4, 5],
+  "boot_times": {
+    "1": 1000,
+    "2": 2000,
+    "3": 3000,
+    "4": 4000,
+    "5": 5000
+  },
+  "event_count": 50000,
+  "noise": {
+    "model": "constant",
+    "value": -95,
+    "count": 100
+  }
+}
