@@ -159,8 +159,8 @@ implementation {
           replyDest = rcv->src;
 
           /*
-           * Node 2 waits 200 ms, Node 3 waits 300 ms.
-           * This avoids two reply packets colliding at node 1.
+           * Each responder waits for a node-specific delay before replying.
+           * This reduces reply collisions when the simulation uses more nodes.
            */
           call ReplyTimer.startOneShot(100 * TOS_NODE_ID);
         }
