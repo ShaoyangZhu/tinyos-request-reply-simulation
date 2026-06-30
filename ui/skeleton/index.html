@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TOSSIM Experiment Console</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Scenarios">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">T</span>
+          <div>
+            <h1>TOSSIM Console</h1>
+            <p>Request-reply lab</p>
+          </div>
+        </div>
+
+        <nav class="scenario-list" id="scenarioList" aria-label="Scenario list"></nav>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Scenario</p>
+            <h2 id="scenarioTitle">multihop_chain</h2>
+          </div>
+          <div class="actions">
+            <button type="button" class="button secondary" id="inspectButton">Inspect</button>
+            <button type="button" class="button primary" id="runButton">Run</button>
+            <button type="button" class="icon-button" id="exportButton" aria-label="Export evidence" title="Export evidence">
+              <span aria-hidden="true">↓</span>
+            </button>
+          </div>
+        </header>
+
+        <section class="status-strip" aria-label="Run summary">
+          <div>
+            <span class="label">Container command</span>
+            <code id="commandText">sh container/run-in-container.sh multihop_chain</code>
+          </div>
+          <div>
+            <span class="label">Run state</span>
+            <strong id="runState">Not started</strong>
+          </div>
+        </section>
+
+        <section class="grid">
+          <article class="panel overview-panel">
+            <div class="panel-header">
+              <h3>Scenario Overview</h3>
+              <span class="badge" id="scenarioType">multi-hop</span>
+            </div>
+            <dl class="definition-grid">
+              <div>
+                <dt>Sink</dt>
+                <dd id="sinkValue">1</dd>
+              </div>
+              <div>
+                <dt>Responders</dt>
+                <dd id="respondersValue">2, 3, 4, 5</dd>
+              </div>
+              <div>
+                <dt>Events</dt>
+                <dd id="eventsValue">50000</dd>
+              </div>
+              <div>
+                <dt>Noise</dt>
+                <dd id="noiseValue">-95 dBm x 100</dd>
+              </div>
+            </dl>
+          </article>
+
+          <article class="panel route-panel">
+            <div class="panel-header">
+              <h3>Static Routes</h3>
+              <span class="badge warning" id="routeBadge">fixed</span>
+            </div>
+            <ul class="route-list" id="routeList"></ul>
+          </article>
+
+          <article class="panel topology-panel">
+            <div class="panel-header">
+              <h3>Topology</h3>
+              <span class="badge" id="linkCount">8 links</span>
+            </div>
+            <div class="topology-canvas" id="topologyCanvas" aria-label="Topology preview"></div>
+          </article>
+
+          <article class="panel metrics-panel">
+            <div class="panel-header">
+              <h3>Analysis Snapshot</h3>
+              <span class="badge muted">sample</span>
+            </div>
+            <div class="metrics-grid">
+              <div class="metric">
+                <span>PRR</span>
+                <strong id="prrValue">0.00%</strong>
+              </div>
+              <div class="metric">
+                <span>End-to-end</span>
+                <strong id="successValue">0.00%</strong>
+              </div>
+              <div class="metric">
+                <span>Avg delay</span>
+                <strong id="delayValue">0.00 ms</strong>
+              </div>
+              <div class="metric">
+                <span>Avg hops</span>
+                <strong id="hopValue">0.00</strong>
+              </div>
+            </div>
+          </article>
+
+          <article class="panel table-panel">
+            <div class="panel-header">
+              <h3>Per-Node Statistics</h3>
+              <span class="badge muted">pending log</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Node</th>
+                    <th>Expected</th>
+                    <th>Received</th>
+                    <th>Loss</th>
+                    <th>Reception</th>
+                    <th>Delay</th>
+                    <th>Hops</th>
+                  </tr>
+                </thead>
+                <tbody id="statsBody"></tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="panel log-panel">
+            <div class="panel-header">
+              <h3>Event Log</h3>
+              <span class="badge muted">preview</span>
+            </div>
+            <div class="log-stream" id="logStream"></div>
+          </article>
+
+          <article class="panel report-panel">
+            <div class="panel-header">
+              <h3>Report Evidence</h3>
+              <span class="badge">Markdown</span>
+            </div>
+            <pre id="reportSnippet"></pre>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
