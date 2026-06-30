@@ -146,6 +146,56 @@ python analyze_log.py <scenario> --log <log-file>
 The mounted project directory receives generated TinyOS/TOSSIM files and the log
 file. These generated outputs are ignored by `.gitignore` and `.dockerignore`.
 
+## Visualization UI
+
+The visualization entry point is:
+
+```text
+ui/skeleton/index.html
+```
+
+The page is a static Tabler dashboard. It can be opened directly in a browser
+without building TinyOS and without running TOSSIM:
+
+```powershell
+Start-Process .\ui\skeleton\index.html
+```
+
+Or, from Linux, macOS, or WSL:
+
+```bash
+xdg-open ui/skeleton/index.html
+```
+
+If the browser blocks local file access or you prefer a local URL, serve the
+`ui` directory as static files:
+
+```bash
+python -m http.server 8080 -d ui
+```
+
+Then open:
+
+```text
+http://localhost:8080/skeleton/
+```
+
+This Python command is only a static file server. It does not run `sim.py`,
+`analyze_log.py`, Docker, Make, or TOSSIM.
+
+The visualization files are:
+
+- `ui/skeleton/index.html`: dashboard page and layout.
+- `ui/skeleton/app.js`: visualization script. It contains the current scenario
+  preview data and renders the scenario list, topology SVG, route list,
+  per-node table, sample dbg stream, and report evidence block.
+- `ui/skeleton/styles.css`: project-specific styles layered on top of Tabler.
+- `ui/vendor/tabler/`: local Tabler 1.4.0 assets and license.
+
+The current UI uses embedded preview data. It is meant to show the experiment
+structure before a real run. A later stage can connect it to a generated JSON
+file from `analyze_log.py`, for example `ui/data/latest-analysis.json`.
+
 ## TOSSIM Lab Mapping
 
 The project now maps directly to the main TOSSIM lab points:

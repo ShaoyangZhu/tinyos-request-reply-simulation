@@ -6,6 +6,36 @@ experiment workspace.
 Open `index.html` directly in a browser. The page uses embedded scenario preview
 data and does not run TOSSIM, Docker, `sim.py`, or `analyze_log.py`.
 
+## How to Run
+
+From the repository root on Windows PowerShell:
+
+```powershell
+Start-Process .\ui\skeleton\index.html
+```
+
+From Linux, macOS, or WSL:
+
+```bash
+xdg-open ui/skeleton/index.html
+```
+
+If direct `file://` access is inconvenient, serve the `ui` directory as static
+files:
+
+```bash
+python -m http.server 8080 -d ui
+```
+
+Then open:
+
+```text
+http://localhost:8080/skeleton/
+```
+
+The HTTP server command only serves static UI files. It does not run TinyOS,
+TOSSIM, `sim.py`, `analyze_log.py`, Docker, or Make.
+
 ## Files
 
 - `index.html`: Tabler dashboard shell and screen structure.
